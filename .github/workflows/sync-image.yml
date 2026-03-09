@@ -1,0 +1,46 @@
+name: Sync Image to Aliyun ACR (Hong Kong)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'ultralytics/ultralytics'
+        required: true
+        default: 'ultralytics/ultralytics'
+      image_tag:
+        description: 'latest-jetson-jetpack6'
+        required: true
+        default: 'latest-jetson-jetpack6'
+
+env:
+  # 重要：替换为您的香港ACR实例登录地址
+  ACR_REGISTRY: "crpi-w8zkz2vzc6nuxrzp.cn-hongkong.personal.cr.aliyuncs.com"
+  # 重要：替换为您在ACR创建的命名空间
+  NAMESPACE: "smart_robot_ws" 
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Aliyun ACR (Hong Kong)
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ env.ACR_REGISTRY }}" \
+            --username "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: Pull and Push Image
+        run: |
+          SOURCE_IMAGE="${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}"
+          # 将镜像名中的 '/' 替换为 '_'，以适应ACR的仓库命名规则
+          ACR_REPO_NAME=$(echo "${{ github.event.inputs.image_name }}" | sed 's|/|_|g')
+          TARGET_IMAGE="${{ env.ACR_REGISTRY }}/${{ env.NAMESPACE }}/${ACR_REPO_NAME}:${{ github.event.inputs.image_tag }}"
+
+          echo "🔄 正在从Docker Hub拉取: ${SOURCE_IMAGE}"
+          docker pull "${SOURCE_IMAGE}"
+
+          echo "🏷️ 正在打标签: ${TARGET_IMAGE}"
+          docker tag "${SOURCE_IMAGE}" "${TARGET_IMAGE}"
+
+          echo "📤 正在推送到阿里云ACR: ${TARGET_IMAGE}"
+          docker push "${TARGET_IMAGE}"
+
+          echo "✅ 镜像同步完成！现在它躺在您的香港ACR仓库里了。"
