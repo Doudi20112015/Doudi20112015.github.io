@@ -23,9 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Login to Aliyun ACR (Hong Kong)
-        run: |
-          echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ env.ACR_REGISTRY }}" \
-            --username "${{ secrets.ACR_USERNAME }}" --password-stdin
+        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ env.ACR_REGISTRY }}" --username "${{ secrets.ACR_USERNAME }}" --password-stdin
 
       - name: Pull and Push Image
         run: |
